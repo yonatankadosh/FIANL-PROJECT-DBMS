@@ -29,7 +29,9 @@ def get_connection():
 def query_1(search_term, cursor):
     """
     Query 1: Full-text search query
-    (Should be one of the 2 full-text queries required)
+    Plot/Concept Analysis
+    Target Audience Value: Allows producers to search for plot keywords (e.g., "apocalypse", "wedding")
+    to see the financial performance of similar past movies.
     
     Args:
         search_term: User input parameter
@@ -38,9 +40,20 @@ def query_1(search_term, cursor):
     Returns:
         List of tuples containing query results
     """
-    # TODO: Implement query
     query = """
-    -- Add your query here
+    SELECT 
+        title, 
+        release_year, 
+        CONCAT('$', FORMAT(budget, 0)) as budget_formatted, 
+        CONCAT('$', FORMAT(revenue, 0)) as revenue_formatted,
+        ROUND(revenue / NULLIF(budget, 0), 2) as roi_ratio
+    FROM movies 
+    WHERE 
+        MATCH(overview) AGAINST (%s IN NATURAL LANGUAGE MODE)
+        AND budget > 0 
+        AND revenue > 0
+    ORDER BY revenue DESC
+    LIMIT 20;
     """
     cursor.execute(query, (search_term,))
     return cursor.fetchall()
@@ -49,7 +62,9 @@ def query_1(search_term, cursor):
 def query_2(search_term, cursor):
     """
     Query 2: Full-text search query
-    (Should be one of the 2 full-text queries required)
+    Title Competitor Check
+    Target Audience Value: Search for specific phrases in titles to analyze popularity 
+    and viewer reception.
     
     Args:
         search_term: User input parameter
@@ -58,72 +73,119 @@ def query_2(search_term, cursor):
     Returns:
         List of tuples containing query results
     """
-    # TODO: Implement query
     query = """
-    -- Add your query here
+    SELECT 
+        title, 
+        popularity, 
+        vote_average, 
+        vote_count 
+    FROM movies 
+    WHERE MATCH(title) AGAINST (%s IN NATURAL LANGUAGE MODE)
+    ORDER BY popularity DESC
+    LIMIT 20;
     """
     cursor.execute(query, (search_term,))
     return cursor.fetchall()
 
 
-def query_3(param1, param2, cursor):
+def query_3(min_movies_together, cursor):
     """
     Query 3: Complex query
-    (Should be one of the 3 complex queries required - e.g., nested queries, group by, aggregations, EXISTS)
+    Best Actor Combinations (Pairs) by Rating
+    Target Audience Value: Producers want to know which 'Power Couples' work best together.
     
     Args:
-        param1: User input parameter
-        param2: User input parameter
+        min_movies_together: Minimum number of movies the pair acted in together (to ensure statistical significance).
         cursor: Database cursor
     
     Returns:
         List of tuples containing query results
     """
-    # TODO: Implement query
+    # Note: We filter by p1.person_id < p2.person_id to avoid duplicates (A,B) and (B,A)
+    # We also limit to cast_order < 10 to focus on main actors, otherwise query might be too heavy.
     query = """
-    -- Add your query here
+    SELECT 
+        p1.name AS actor_1,
+        p2.name AS actor_2,
+        COUNT(*) AS movies_together,
+        ROUND(AVG(m.vote_average), 2) AS avg_rating
+    FROM movie_cast mc1
+    JOIN movie_cast mc2 ON mc1.movie_id = mc2.movie_id
+    JOIN people p1 ON mc1.person_id = p1.person_id
+    JOIN people p2 ON mc2.person_id = p2.person_id
+    JOIN movies m ON mc1.movie_id = m.movie_id
+    WHERE mc1.person_id < mc2.person_id
+      AND mc1.cast_order < 10 
+      AND mc2.cast_order < 10
+    GROUP BY p1.person_id, p2.person_id, p1.name, p2.name
+    HAVING COUNT(*) >= %s
+    ORDER BY avg_rating DESC
+    LIMIT 15;
     """
-    cursor.execute(query, (param1, param2))
+    cursor.execute(query, (int(min_movies_together),))
     return cursor.fetchall()
 
 
-def query_4(param1, cursor):
+def query_4(limit_num, cursor):
     """
     Query 4: Complex query
-    (Should be one of the 3 complex queries required - e.g., nested queries, group by, aggregations, EXISTS)
+    Best Director by Revenue
+    Target Audience Value: Identifies the most commercially successful directors.
     
     Args:
-        param1: User input parameter
+        limit_num: Number of directors to show.
         cursor: Database cursor
-    
     Returns:
         List of tuples containing query results
     """
-    # TODO: Implement query
     query = """
-    -- Add your query here
+    SELECT 
+        p.name AS director_name,
+        COUNT(m.movie_id) AS movies_directed,
+        CONCAT('$', FORMAT(SUM(m.revenue), 0)) AS total_revenue
+    FROM people p
+    JOIN movie_crew mc ON p.person_id = mc.person_id
+    JOIN movies m ON mc.movie_id = m.movie_id
+    WHERE mc.job = 'Director' AND m.revenue > 0
+    GROUP BY p.person_id, p.name
+    ORDER BY SUM(m.revenue) DESC
+    LIMIT %s;
     """
-    cursor.execute(query, (param1,))
+    cursor.execute(query, (int(limit_num),))
     return cursor.fetchall()
 
 
-def query_5(param1, param2, cursor):
+def query_5(min_revenue_threshold, cursor):
     """
     Query 5: Complex query
-    (Should be one of the 3 complex queries required - e.g., nested queries, group by, aggregations, EXISTS)
+    Best Genre Combinations by Revenue
+    Target Audience Value: Helps producers decide on genre mashups (e.g., "Action-Comedy" vs "Horror-Romance").
+    Complexity: Uses Self-Join on movie_genres to find combinations.
     
     Args:
-        param1: User input parameter
-        param2: User input parameter
+        min_revenue_threshold: Filter to consider only movies making significant money.
         cursor: Database cursor
     
     Returns:
         List of tuples containing query results
     """
-    # TODO: Implement query
     query = """
-    -- Add your query here
+    SELECT 
+        g1.name AS genre_1,
+        g2.name AS genre_2,
+        COUNT(m.movie_id) AS movie_count,
+        CONCAT('$', FORMAT(AVG(m.revenue), 0)) AS avg_revenue
+    FROM movie_genres mg1
+    JOIN movie_genres mg2 ON mg1.movie_id = mg2.movie_id
+    JOIN genres g1 ON mg1.genre_id = g1.genre_id
+    JOIN genres g2 ON mg2.genre_id = g2.genre_id
+    JOIN movies m ON mg1.movie_id = m.movie_id
+    WHERE mg1.genre_id < mg2.genre_id 
+      AND m.revenue >= %s
+    GROUP BY g1.genre_id, g2.genre_id, g1.name, g2.name
+    ORDER BY AVG(m.revenue) DESC
+    LIMIT 15;
     """
-    cursor.execute(query, (param1, param2))
+    cursor.execute(query, (int(min_revenue_threshold),))
     return cursor.fetchall()
 
