@@ -45,43 +45,40 @@ def main():
         print(f"Database: {config.DB_CONFIG['database']}")
         print(f"Host: {config.DB_CONFIG['host']}")
         
-        # TODO: Add example query executions here
-        # Example 1: Query 1
-        # print("\n" + "="*60)
-        # print("EXAMPLE QUERY 1: Description of query")
-        # print("="*60)
-        # results = query_1("example_param", cursor)
-        # print_query_results("Query 1", results)
+        # Example 1: Query 1 - Full-text search on plot/overview
+        print("\n" + "="*60)
+        print("EXAMPLE QUERY 1: Plot/Concept Analysis - Search for 'apocalypse' in movie overviews")
+        print("="*60)
+        results = query_1("apocalypse", cursor)
+        print_query_results("Query 1", results)
         
-        # Example 2: Query 2
-        # print("\n" + "="*60)
-        # print("EXAMPLE QUERY 2: Description of query")
-        # print("="*60)
-        # results = query_2("example_param", cursor)
-        # print_query_results("Query 2", results)
+        # Example 2: Query 2 - Full-text search on titles
+        print("\n" + "="*60)
+        print("EXAMPLE QUERY 2: Title Competitor Check - Search for 'superhero' in titles")
+        print("="*60)
+        results = query_2("superhero", cursor)
+        print_query_results("Query 2", results)
         
-        # Example 3: Query 3
-        # print("\n" + "="*60)
-        # print("EXAMPLE QUERY 3: Description of query")
-        # print("="*60)
-        # results = query_3("param1", "param2", cursor)
-        # print_query_results("Query 3", results)
+        # Example 3: Query 3 - Best Actor Combinations
+        print("\n" + "="*60)
+        print("EXAMPLE QUERY 3: Best Actor Combinations - Find pairs who acted together at least 3 times")
+        print("="*60)
+        results = query_3(3, cursor)
+        print_query_results("Query 3", results)
         
-        # Example 4: Query 4
-        # print("\n" + "="*60)
-        # print("EXAMPLE QUERY 4: Description of query")
-        # print("="*60)
-        # results = query_4("example_param", cursor)
-        # print_query_results("Query 4", results)
+        # Example 4: Query 4 - Best Directors by Revenue
+        print("\n" + "="*60)
+        print("EXAMPLE QUERY 4: Best Directors by Revenue - Top 10 directors")
+        print("="*60)
+        results = query_4(10, cursor)
+        print_query_results("Query 4", results)
         
-        # Example 5: Query 5
-        # print("\n" + "="*60)
-        # print("EXAMPLE QUERY 5: Description of query")
-        # print("="*60)
-        # results = query_5("param1", "param2", cursor)
-        # print_query_results("Query 5", results)
-        
-        print("\nNo queries executed yet. Implement queries in queries_db_script.py and uncomment examples here.")
+        # Example 5: Query 5 - Best Genre Combinations
+        print("\n" + "="*60)
+        print("EXAMPLE QUERY 5: Best Genre Combinations - Genre pairs with revenue >= $50,000,000")
+        print("="*60)
+        results = query_5(50000000, cursor)
+        print_query_results("Query 5", results)
         
         cursor.close()
         connection.close()
@@ -95,4 +92,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
