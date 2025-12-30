@@ -183,29 +183,6 @@ def create_movie_ratings_summary_table(cursor):
     """
     cursor.execute(query)
 
-def create_indices(cursor):
-    """
-    Create additional B-Tree indices to optimize specific queries (WHERE, JOIN, ORDER BY).
-    Note: FULLTEXT indices are already defined in the table creation.
-    """
-    print("Creating indices...")
-    
-    # Q1 & Q2: Optimize filtering by year (very common filter)
-    cursor.execute("CREATE INDEX idx_movies_release_year ON movies(release_year)")
-    
-    # Q3: Optimize Budget Tier Analysis (filtering and sorting by budget)
-    cursor.execute("CREATE INDEX idx_movies_budget ON movies(budget)")
-    
-    # Q2: Optimize 'Flop' detection (filtering by revenue and votes)
-    cursor.execute("CREATE INDEX idx_movies_revenue_vote ON movies(revenue, vote_average)")
-    
-    # Q4: Optimize searching for Directors in the huge crew table
-    cursor.execute("CREATE INDEX idx_crew_job ON movie_crew(job)")
-    
-    # Q5: Optimize Genre filtering by name
-    cursor.execute("CREATE INDEX idx_genres_name ON genres(name)")
-    
-    print("Indices created successfully.")
 
 def create_all_tables():
     """
@@ -237,9 +214,6 @@ def create_all_tables():
         create_movie_keywords_table(cursor)
         create_movie_ratings_summary_table(cursor)
 
-        # 3. Create Indices
-        create_indices(cursor)
-        
         connection.commit()
         cursor.close()
         connection.close()
