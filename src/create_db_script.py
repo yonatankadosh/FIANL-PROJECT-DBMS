@@ -10,6 +10,7 @@ import config
 def create_movies_table(cursor):
     """
     Create the 'movies' table to store movie information.
+    Optimized indexes for Query 1, 2, 4, 5.
     """
     query = """
     CREATE TABLE IF NOT EXISTS movies (
@@ -27,8 +28,12 @@ def create_movies_table(cursor):
         vote_count          INT,
         tagline             TEXT,
         overview            TEXT,
-        FULLTEXT (title, overview),
-        FULLTEXT (title)
+        -- Index for sorting/filtering by revenue (Queries 1, 4, 5)
+        INDEX idx_revenue (revenue),
+        -- Fulltext for Title Search (Query 2)
+        FULLTEXT idx_ft_title (title),
+        -- Fulltext for Plot Analysis (Query 1)
+        FULLTEXT idx_ft_overview (overview)
     );
     """
     cursor.execute(query)
@@ -108,6 +113,7 @@ def create_movie_cast_table(cursor):
 def create_movie_crew_table(cursor):
     """
     Create the 'movie_crew' table to link movies with crew members.
+    Optimized index for Query 4 (Director search).
     """
     query = """
     CREATE TABLE IF NOT EXISTS movie_crew (
@@ -116,6 +122,8 @@ def create_movie_crew_table(cursor):
         department  VARCHAR(100),
         job         VARCHAR(255),
         PRIMARY KEY (movie_id, person_id, department, job),
+        -- Index specifically for filtering by Job (e.g., 'Director')
+        INDEX idx_job (job),
         CONSTRAINT fk_movie_crew_movie
             FOREIGN KEY (movie_id)
             REFERENCES movies(movie_id)
