@@ -94,6 +94,9 @@ def query_3(min_movies_together, cursor):
     Best Actor Combinations (Pairs) by Rating
     Target Audience Value: Producers want to know which 'Power Couples' work best together.
     
+    Note: This query performs a self-join which is computationally expensive.
+    Limiting to top 5 cast members (cast_order < 5) reduces computation significantly.
+    
     Args:
         min_movies_together: Minimum number of movies the pair acted in together (to ensure statistical significance).
         cursor: Database cursor
@@ -101,22 +104,27 @@ def query_3(min_movies_together, cursor):
     Returns:
         List of tuples containing query results
     """
-    # Note: We filter by p1.person_id < p2.person_id to avoid duplicates (A,B) and (B,A)
-    # We also limit to cast_order < 10 to focus on main actors, otherwise query might be too heavy.
+    # Optimized: Filter cast_order early using a subquery/CTE-like approach
+    # This reduces the number of rows before the expensive self-join
     query = """
     SELECT 
         p1.name AS actor_1,
         p2.name AS actor_2,
         COUNT(*) AS movies_together,
         ROUND(AVG(m.vote_average), 2) AS avg_rating
-    FROM movie_cast mc1
-    JOIN movie_cast mc2 ON mc1.movie_id = mc2.movie_id
+    FROM (
+        SELECT movie_id, person_id, cast_order
+        FROM movie_cast
+        WHERE cast_order < 10
+    ) mc1
+    JOIN (
+        SELECT movie_id, person_id, cast_order
+        FROM movie_cast
+        WHERE cast_order < 10
+    ) mc2 ON mc1.movie_id = mc2.movie_id AND mc1.person_id < mc2.person_id
     JOIN people p1 ON mc1.person_id = p1.person_id
     JOIN people p2 ON mc2.person_id = p2.person_id
     JOIN movies m ON mc1.movie_id = m.movie_id
-    WHERE mc1.person_id < mc2.person_id
-      AND mc1.cast_order < 10 
-      AND mc2.cast_order < 10
     GROUP BY p1.person_id, p2.person_id, p1.name, p2.name
     HAVING COUNT(*) >= %s
     ORDER BY avg_rating DESC

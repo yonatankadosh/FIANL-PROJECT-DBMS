@@ -30,6 +30,8 @@ def create_movies_table(cursor):
         overview            TEXT,
         -- Index for sorting/filtering by revenue (Queries 1, 4, 5)
         INDEX idx_revenue (revenue),
+        -- Index for Query 3: sorting by vote_average (rating)
+        INDEX idx_vote_average (vote_average),
         -- Fulltext for Title Search (Query 2)
         FULLTEXT idx_ft_title (title),
         -- Fulltext for Plot Analysis (Query 1)
@@ -88,6 +90,7 @@ def create_people_table(cursor):
 def create_movie_cast_table(cursor):
     """
     Create the 'movie_cast' table to link movies with cast members.
+    Optimized indexes for Query 3 (actor pairs analysis).
     """
     query = """
     CREATE TABLE IF NOT EXISTS movie_cast (
@@ -96,6 +99,8 @@ def create_movie_cast_table(cursor):
         cast_order      INT,
         character_name  VARCHAR(500),
         PRIMARY KEY (movie_id, person_id, cast_order),
+        -- Index to optimize Query 3: allows filtering cast_order early and efficient join on movie_id
+        INDEX idx_movie_cast_order (movie_id, cast_order, person_id),
         CONSTRAINT fk_movie_cast_movie
             FOREIGN KEY (movie_id)
             REFERENCES movies(movie_id)
